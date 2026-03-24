@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useHoldForm } from "@/context/HoldFormContext";
 import { SchemaForm } from "@/components/SchemaForm";
+import type { Schema } from "@/types/schema";
 import "@/components/SchemaForm.css";
+
+const DEFAULT_SCHEMA_KEY = "hold_entry:add:v1";
 
 function formatDateForApi(dateStr: string): string {
   if (!dateStr) return dateStr;
@@ -19,26 +22,65 @@ export function FormPanel() {
     active,
     schemaKey,
     schema,
-    fieldOptions,
+    draftValues,
+    errors,
     formInstanceKey,
     respondRef,
-    setDraftValues,
+    openForm,
+    updateField,
+    setFieldValues,
+    setErrors,
     setLastSubmission,
+    getCompletionStatus,
   } = useHoldForm();
   const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [autoLoading, setAutoLoading] = useState(false);
+
+  useEffect(() => {
+    if (active) return;
+    let cancelled = false;
+    async function loadSchema() {
+      setAutoLoading(true);
+      setLoadError(null);
+      try {
+        const res = await fetch(`/api/mcp-rest/schemas/${DEFAULT_SCHEMA_KEY}`);
+        if (!res.ok) {
+          setLoadError("Could not load schema. Make sure the MCP backend is running.");
+          return;
+        }
+        const data = await res.json() as Schema;
+        if (cancelled) return;
+        openForm({
+          schemaKey: data.schemaKey ?? DEFAULT_SCHEMA_KEY,
+          schema: data,
+        });
+      } catch {
+        if (!cancelled) setLoadError("Failed to connect to the backend.");
+      } finally {
+        if (!cancelled) setAutoLoading(false);
+      }
+    }
+    loadSchema();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleAutoPopulate = useCallback(
+    (populated: Record<string, unknown>) => {
+      setFieldValues(populated);
+    },
+    [setFieldValues]
+  );
 
   const handleSubmit = useCallback(
     async (data: Record<string, unknown>) => {
-      const respond = respondRef.current;
-      if (!respond) return;
-
       const normalized: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(data)) {
         if (v === undefined || v === null || v === "") continue;
-        if (k === "prodDate" && typeof v === "string") {
-          normalized[k] = formatDateForApi(v);
-        } else if (
-          (k === "dispositionProvidedTargetDate" || k === "dispositionActionTargetDate") &&
+        if (
+          (k === "prodDate" ||
+            k === "dispositionProvidedTargetDate" ||
+            k === "dispositionActionTargetDate") &&
           typeof v === "string"
         ) {
           normalized[k] = formatDateForApi(v);
@@ -49,15 +91,21 @@ export function FormPanel() {
 
       const json = JSON.stringify(normalized);
       setLastSubmission(json);
-      setSubmitting(true);
-      try {
-        await respond(json);
-      } finally {
-        setSubmitting(false);
+
+      const respond = respondRef.current;
+      if (respond) {
+        setSubmitting(true);
+        try {
+          await respond(json);
+        } finally {
+          setSubmitting(false);
+        }
       }
     },
     [respondRef, setLastSubmission]
   );
+
+  const status = active ? getCompletionStatus() : null;
 
   return (
     <section className="form-panel" aria-label="Hold entry form">
@@ -69,27 +117,53 @@ export function FormPanel() {
         </p>
       </header>
 
-      {!active || !schema?.fieldConfig?.fields?.length ? (
+      {autoLoading && (
         <div className="form-panel-empty">
-          <p>
-            No form is open yet. Ask the assistant to start a hold entry—it will load the form here.
-          </p>
-          <p className="form-panel-hint">
-            You can also work entirely in chat; the assistant can use tools without this form.
-          </p>
+          <p>Loading form schema...</p>
         </div>
-      ) : (
+      )}
+
+      {loadError && (
+        <div className="form-panel-empty form-panel-error">
+          <p>{loadError}</p>
+        </div>
+      )}
+
+      {active && schema?.fieldConfig?.fields?.length ? (
         <div className="form-panel-body" key={formInstanceKey}>
-          <p className="form-panel-schema-key">{schemaKey}</p>
+          <div className="form-panel-meta">
+            <span className="form-panel-schema-key">{schemaKey}</span>
+            {status && (
+              <span className="form-panel-progress">
+                {status.requiredFilled}/{status.required} required fields
+                {status.nextRequired && (
+                  <> &middot; Next: <strong>{status.nextRequired.label}</strong></>
+                )}
+              </span>
+            )}
+          </div>
           <SchemaForm
-            schemaKey={schemaKey ?? "hold_entry:add:v1"}
-            schema={schema as Parameters<typeof SchemaForm>[0]["schema"]}
-            fieldOptions={fieldOptions as Record<string, string | Record<string, string>>}
-            onValuesChange={setDraftValues}
+            schema={schema}
+            values={draftValues}
+            errors={errors}
+            onFieldChange={updateField}
+            onAutoPopulate={handleAutoPopulate}
             onSubmit={handleSubmit}
             isSubmitting={submitting}
           />
         </div>
+      ) : (
+        !autoLoading &&
+        !loadError && (
+          <div className="form-panel-empty">
+            <p>
+              No form is open yet. Ask the assistant to start a hold entry—it will load the form here.
+            </p>
+            <p className="form-panel-hint">
+              You can also work entirely in chat; the assistant can use tools without this form.
+            </p>
+          </div>
+        )
       )}
     </section>
   );
