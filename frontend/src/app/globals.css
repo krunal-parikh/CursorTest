@@ -1,12 +1,17 @@
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --card: #141414;
-  --card-foreground: #ededed;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #fafafa;
   --primary: #22c55e;
-  --primary-foreground: #0a0a0a;
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
+  --primary-foreground: #09090b;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
+  --accent: #22c55e;
+  --accent-muted: rgba(34, 197, 94, 0.12);
+  --destructive: #ef4444;
+  --radius: 10px;
 }
 
 * {
@@ -21,32 +26,41 @@ body {
   overflow-x: hidden;
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    sans-serif;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ═══════════════ Workspace layout ═══════════════ */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  grid-template-columns: 1fr 400px;
   min-height: 100vh;
   width: 100%;
 }
 
+/* ═══════════════ Form panel (left) ═══════════════ */
 .form-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  padding: 1.5rem 1.75rem 2rem;
-  border-right: 1px solid var(--muted);
+  padding: 2rem 2.5rem 2.5rem;
+  border-right: 1px solid var(--border);
   background: var(--background);
   overflow-y: auto;
 }
 
+.form-panel-header {
+  margin-bottom: 1.5rem;
+}
+
 .form-panel-header h1 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 0.35rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.25rem;
   background: linear-gradient(135deg, var(--primary), #4ade80);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -55,47 +69,144 @@ body {
 
 .form-panel-subtitle {
   color: var(--muted-foreground);
-  font-size: 0.9rem;
-  line-height: 1.45;
-  max-width: 42rem;
+  font-size: 0.825rem;
+  line-height: 1.5;
+  max-width: 44rem;
 }
 
 .form-panel-empty {
   margin-top: 2rem;
-  padding: 1.25rem;
-  border-radius: 10px;
+  padding: 1.5rem;
+  border-radius: var(--radius);
   background: var(--card);
+  border: 1px solid var(--border);
   color: var(--muted-foreground);
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 0.9rem;
 }
 
 .form-panel-hint {
   margin-top: 0.75rem;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.form-panel-error {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.06);
+  color: var(--destructive);
 }
 
 .form-panel-body {
-  margin-top: 1.25rem;
+  margin-top: 0;
   flex: 1;
   min-height: 0;
 }
 
-.form-panel-schema-key {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  font-family: ui-monospace, monospace;
-  margin-bottom: 0.75rem;
+/* ═══════════════ Meta row + progress ═══════════════ */
+.form-panel-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
 }
 
+.form-panel-schema-key {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+  opacity: 0.6;
+}
+
+.form-panel-progress {
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.form-panel-progress strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+/* ═══════════════ Progress bar ═══════════════ */
+.progress-bar-container {
+  margin-bottom: 1.25rem;
+}
+
+.progress-bar-track {
+  height: 4px;
+  background: var(--muted);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #4ade80);
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-bar-label {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  font-size: 0.725rem;
+  color: var(--muted-foreground);
+}
+
+.progress-bar-label .complete {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ═══════════════ Chat column (right) ═══════════════ */
 .chat-column {
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
   background: var(--card);
+  border-left: 1px solid var(--border);
 }
 
-/* CopilotChat root: fill the right column */
+.chat-column-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chat-column-header h2 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.chat-column-header .chat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ═══════════════ CopilotKit theme override ═══════════════ */
 .workspace .workspace-chat.copilotKitChat {
   flex: 1;
   display: flex;
@@ -103,6 +214,14 @@ body {
   min-height: 0;
   height: 100%;
   max-height: 100vh;
+  --copilot-kit-primary-color: #22c55e;
+  --copilot-kit-contrast-color: #09090b;
+  --copilot-kit-background-color: #18181b;
+  --copilot-kit-input-background-color: #09090b;
+  --copilot-kit-secondary-color: #27272a;
+  --copilot-kit-secondary-contrast-color: #fafafa;
+  --copilot-kit-separator-color: #27272a;
+  --copilot-kit-muted-color: #a1a1aa;
 }
 
 .workspace .workspace-chat.copilotKitChat .copilotKitMessages {
@@ -111,7 +230,13 @@ body {
   overflow-y: auto;
 }
 
-@media (max-width: 900px) {
+/* Hide CopilotKit default header (we have our own) */
+.workspace .workspace-chat.copilotKitChat .copilotKitHeader {
+  display: none;
+}
+
+/* ═══════════════ Responsive ═══════════════ */
+@media (max-width: 960px) {
   .workspace {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(50vh, 1fr);
@@ -119,11 +244,13 @@ body {
 
   .form-panel {
     border-right: none;
-    border-bottom: 1px solid var(--muted);
+    border-bottom: 1px solid var(--border);
     max-height: 55vh;
+    padding: 1.25rem 1.5rem;
   }
 
   .chat-column {
     min-height: 45vh;
+    border-left: none;
   }
 }
