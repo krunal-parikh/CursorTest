@@ -1,0 +1,95 @@
+.schema-form {
+  background: var(--card, #141414);
+  border: 1px solid var(--muted, #262626);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.75rem 0;
+}
+
+.schema-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.schema-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.schema-form-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground, #ededed);
+}
+
+.schema-form-field .required {
+  color: #ef4444;
+}
+
+.form-input,
+.form-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--muted, #262626);
+  border-radius: 6px;
+  background: var(--background, #0a0a0a);
+  color: var(--foreground, #ededed);
+  font-size: 0.9rem;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary, #22c55e);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.form-input::placeholder {
+  color: var(--muted-foreground, #a3a3a3);
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: #ef4444;
+}
+
+.schema-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--muted, #262626);
+}
+
+.btn-primary {
+  padding: 0.5rem 1rem;
+  background: var(--primary, #22c55e);
+  color: var(--primary-foreground, #0a0a0a);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--muted-foreground, #a3a3a3);
+  border: 1px solid var(--muted, #262626);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--muted, #262626);
+}
