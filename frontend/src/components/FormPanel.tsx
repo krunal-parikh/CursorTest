@@ -11,10 +11,30 @@ const DEFAULT_SCHEMA_KEY = "hold_entry:add:v1";
 function formatDateForApi(dateStr: string): string {
   if (!dateStr) return dateStr;
   const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (match) {
-    return `${match[2]}/${match[3]}/${match[1]}`;
-  }
+  if (match) return `${match[2]}/${match[3]}/${match[1]}`;
   return dateStr;
+}
+
+function ProgressBar({ filled, total }: { filled: number; total: number }) {
+  const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+  const isComplete = filled === total && total > 0;
+  return (
+    <div className="progress-bar-container">
+      <div className="progress-bar-track">
+        <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="progress-bar-label">
+        <span>
+          {filled}/{total} required
+        </span>
+        {isComplete ? (
+          <span className="complete">Ready to submit</span>
+        ) : (
+          <span>{pct}%</span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function FormPanel() {
@@ -49,7 +69,7 @@ export function FormPanel() {
           setLoadError("Could not load schema. Make sure the MCP backend is running.");
           return;
         }
-        const data = await res.json() as Schema;
+        const data = (await res.json()) as Schema;
         if (cancelled) return;
         openForm({
           schemaKey: data.schemaKey ?? DEFAULT_SCHEMA_KEY,
@@ -62,7 +82,9 @@ export function FormPanel() {
       }
     }
     loadSchema();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleAutoPopulate = useCallback(
@@ -112,8 +134,7 @@ export function FormPanel() {
       <header className="form-panel-header">
         <h1>ThresHOLD</h1>
         <p className="form-panel-subtitle">
-          Fill the form on the left; ask the assistant on the right. The assistant sees your draft
-          fields and your last submit.
+          Fill in the form below or use the AI assistant on the right. Changes sync in real-time between both panels.
         </p>
       </header>
 
@@ -133,15 +154,15 @@ export function FormPanel() {
         <div className="form-panel-body" key={formInstanceKey}>
           <div className="form-panel-meta">
             <span className="form-panel-schema-key">{schemaKey}</span>
-            {status && (
+            {status && status.nextRequired && (
               <span className="form-panel-progress">
-                {status.requiredFilled}/{status.required} required fields
-                {status.nextRequired && (
-                  <> &middot; Next: <strong>{status.nextRequired.label}</strong></>
-                )}
+                Next: <strong>{status.nextRequired.label}</strong>
               </span>
             )}
           </div>
+          {status && (
+            <ProgressBar filled={status.requiredFilled} total={status.required} />
+          )}
           <SchemaForm
             schema={schema}
             values={draftValues}
@@ -157,10 +178,12 @@ export function FormPanel() {
         !loadError && (
           <div className="form-panel-empty">
             <p>
-              No form is open yet. Ask the assistant to start a hold entry—it will load the form here.
+              No form is open yet. Ask the assistant to start a hold entry—it will
+              load the form here.
             </p>
             <p className="form-panel-hint">
-              You can also work entirely in chat; the assistant can use tools without this form.
+              You can also work entirely in chat; the assistant can use tools
+              without this form.
             </p>
           </div>
         )

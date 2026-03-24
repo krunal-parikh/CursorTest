@@ -55,7 +55,7 @@ export function FormActions() {
 
   useCopilotAction({
     name: "showFormFromSchema",
-    description: `Opens the hold entry form on the LEFT panel. The user fills fields and clicks Submit—you receive JSON via this action. Copilot readable context includes their live draft fields and which field just changed. Then call preview_hold_entry and create_record.`,
+    description: `Opens the hold entry form on the LEFT panel. The user fills fields and clicks Submit—you receive JSON via this action.`,
     parameters: [
       {
         name: "schemaKey",
@@ -83,7 +83,7 @@ export function FormActions() {
 
   useCopilotAction({
     name: "updateFormField",
-    description: `Set a single field value on the left panel form. Use this when the user tells you a value in chat (e.g. "set plant to PLT01" or "use MO-003"). The form UI updates in real-time. The field must match a field_name from the schema.`,
+    description: `Set a single field value on the left panel form. The form UI updates in real-time. Use when user says things like "set category to Testing" or "use MO-003" or "set plant to PLT01". The field must match a field_name from the schema. For select fields, use the option VALUE (e.g. "PLT01" not "Plant 01").`,
     parameters: [
       {
         name: "fieldName",
@@ -94,7 +94,7 @@ export function FormActions() {
       {
         name: "value",
         type: "string",
-        description: "The value to set",
+        description: "The value to set (use the option value, not the label)",
         required: true,
       },
     ],
@@ -108,7 +108,12 @@ export function FormActions() {
         completion: {
           requiredFilled: status.requiredFilled,
           requiredTotal: status.required,
-          nextRequired: status.nextRequired?.label ?? null,
+          nextRequired: status.nextRequired
+            ? {
+                label: status.nextRequired.label,
+                options: status.nextRequired.options?.map((o) => o.label ?? o.value) ?? [],
+              }
+            : null,
         },
       });
     },
@@ -116,7 +121,7 @@ export function FormActions() {
 
   useCopilotAction({
     name: "setMultipleFormFields",
-    description: `Set multiple field values on the left panel form at once. Use when the user provides several values (e.g. "set plant to PLT01 and category to Testing"). Fields update in real-time on the form UI.`,
+    description: `Set multiple field values at once. Fields update in real-time on the form UI. Use for bulk updates like filling from previous data.`,
     parameters: [
       {
         name: "fields",
@@ -143,7 +148,7 @@ export function FormActions() {
 
   useCopilotAction({
     name: "getFormStatus",
-    description: `Get the current form completion status: which fields are filled, which required fields are missing, and what the next suggested field is. Use this to give the user a summary of their progress.`,
+    description: `Get the current form completion status: which fields are filled, which required fields are missing, and what the next suggested field is.`,
     parameters: [],
     handler: async () => {
       const status = getCompletionStatus();
@@ -181,6 +186,47 @@ export function FormActions() {
             }
           : null,
       });
+    },
+  });
+
+  useCopilotAction({
+    name: "fillPreviousEntryData",
+    description: `Fills the form with data from the most recently created hold entry. Fetches the latest entry from the API and populates matching fields. Users click the "Fill previous entry" chip or ask "fill previous entry data" in chat. This is useful when creating similar hold entries.`,
+    parameters: [],
+    handler: async () => {
+      try {
+        const res = await fetch("/api/mcp-rest/hold-entries?limit=1&page=1");
+        if (!res.ok) {
+          return JSON.stringify({ success: false, error: "Could not fetch previous entries" });
+        }
+        const result = await res.json();
+        const items = result.items ?? [];
+        if (items.length === 0) {
+          return JSON.stringify({ success: false, error: "No previous entries found" });
+        }
+        const lastEntry = items[0];
+        const data = lastEntry.data ?? {};
+        const toFill: Record<string, unknown> = {};
+        for (const [key, val] of Object.entries(data)) {
+          if (val !== undefined && val !== null && val !== "") {
+            toFill[key] = val;
+          }
+        }
+        setFieldValues(toFill);
+        const status = getCompletionStatus();
+        return JSON.stringify({
+          success: true,
+          holdId: lastEntry.holdId,
+          filledFields: Object.keys(toFill),
+          completion: {
+            requiredFilled: status.requiredFilled,
+            requiredTotal: status.required,
+            nextRequired: status.nextRequired?.label ?? null,
+          },
+        });
+      } catch {
+        return JSON.stringify({ success: false, error: "Failed to fetch previous entry" });
+      }
     },
   });
 
